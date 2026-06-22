@@ -174,22 +174,6 @@ docs/      architecture.md · design.md · INSTALL.md
 
 ---
 
-## 한계 (정직한 범위)
-
-연구/포트폴리오용 파이프라인이며, 프로덕션 스택이 아닙니다:
-
-- **인식은 oracle 전용** — `OraclePerception`은 GT(ground-truth) 물체 포즈를 사용합니다
-  (`confidence=1.0`). 카메라/비전 기반 검출기는 없습니다.
-- **실행에 충돌 회피·모션 플래닝 없음** — IK 실행기는 Differential IK(`ik_skill.py`)이며,
-  관절 한계나 장애물 근처에서 수렴에 실패할 수 있습니다.
-- **파지는 운동학적 FixedJoint** — 감지되면 USD FixedJoint가 물체를 그리퍼에 구속합니다.
-  마찰 기반 `physics` 파지 모드도 있으나 검증되지 않았습니다.
-- **로봇 1종, 씬 1종** — `ROBOTS`에는 `panda`만, `SCENES`에는 `tabletop_rb`(테이블 위
-  red_cube + blue_cube, 무작위 스폰)만 등록돼 있습니다. 설계가 robot/scene-agnostic이라,
-  추가는 코드 변경이 아니라 config 항목 추가입니다.
-
----
-
 ## 라이선스
 
 MIT — [LICENSE](LICENSE) 참조.
