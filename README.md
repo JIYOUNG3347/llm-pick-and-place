@@ -1,3 +1,4 @@
+🌐 [한국어](README.ko.md) | **English**
 # llm-pick-and-place
 
 **Natural-language pick-and-place for a Franka Panda in NVIDIA Isaac Sim, driven by an LLM
