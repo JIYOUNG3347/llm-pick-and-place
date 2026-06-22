@@ -1,0 +1,29 @@
+assets/
+perception_data/
+results/
+weights/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+*.log
+*.pt
+*.pth
+*.onnx
+*.bag
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>llm-pick-and-place · 데이터 흐름</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --ink:#15171c; --muted:#717784;
+    --hair:#e5e8ec; --hair2:#d4d8df;
+    --io:#5b6573; --perc:#0d9488; --plan:#5b54e6; --exec:#c2700a;
+    --pkg:#eef0f4; --pkg-ink:#3a3f49;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.5;
+    padding:48px 20px 88px}
+  .wrap{max-width:660px;margin:0 auto}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted)}
+  h1{font-family:var(--disp);font-weight:700;font-size:clamp(27px,6vw,38px);
+    letter-spacing:-.02em;margin:8px 0 12px;line-height:1.06}
+  .thesis{font-size:14.5px;color:#3c424c;max-width:56ch}
+  .thesis b{font-weight:600;color:var(--ink)}
+
+  .legend{margin:28px 0 22px;padding:15px 17px;background:var(--surface);
+    border:1px solid var(--hair);border-radius:13px}
+  .legend h2{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:11px}
+  .roles{display:flex;flex-wrap:wrap;gap:13px 18px;margin-bottom:15px}
+  .role{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#3c424c}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .contracts{display:flex;flex-wrap:wrap;gap:6px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:11px}
+
+  .tchip{font-family:var(--mono);font-size:12px;font-weight:600;color:#33373f;
+    background:#f1f3f5;border:1px solid var(--hair2);border-radius:7px;padding:3px 9px;
+    cursor:pointer;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}
+  .tchip:hover{border-color:#a9afb8}
+  .tchip:focus-visible{outline:2px solid var(--plan);outline-offset:2px}
+  .tchip.hl{background:var(--ink);color:#fff;border-color:var(--ink);
+    box-shadow:0 1px 7px rgba(21,23,28,.22)}
+  .tchip.dim{opacity:.38}
+
+  /* ---- nodes = 처리 (raised white cards) ---- */
+  .node{position:relative;background:var(--surface);border:1px solid var(--hair);
+    border-left:3px solid var(--io);border-radius:13px;padding:14px 17px;
+    box-shadow:0 1px 2px rgba(21,23,28,.05)}
+  .node--io{border-left-color:var(--io)}.node--perc{border-left-color:var(--perc)}
+  .node--plan{border-left-color:var(--plan)}.node--exec{border-left-color:var(--exec)}
+  .ntag{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+  .node--io .ntag{color:var(--io)}.node--perc .ntag{color:var(--perc)}
+  .node--plan .ntag{color:var(--plan)}.node--exec .ntag{color:var(--exec)}
+  .fn{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);margin:5px 0 4px;word-break:break-word}
+  .desc{font-size:12.5px;color:#525761;max-width:58ch}
+
+  /* ---- packets = 이동하는 값 (flat inset panels) ---- */
+  .flow{display:flex;flex-direction:column;align-items:center;padding:7px 0}
+  .chev{width:8px;height:8px;border-right:2px solid var(--hair2);border-bottom:2px solid var(--hair2);
+    transform:rotate(45deg);margin:1px 0 6px}
+  .packet{width:92%;background:var(--pkg);border-radius:10px;padding:9px 13px;
+    font-family:var(--mono);color:var(--pkg-ink)}
+  .packet .ph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
+  .packet .plabel{font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#9aa0ab}
+  .pf{font-size:11px;line-height:1.85;white-space:pre;overflow-x:auto;color:#4a4f59}
+  .pf b{color:#2c313b;font-weight:600}
+  .pe{font-size:11px;color:#8b919c;margin-top:5px;white-space:pre-wrap;word-break:break-word}
+  .pe b{color:#6a707b;font-weight:600}
+
+  /* ---- inner tick loop inside executor ---- */
+  .subloop{margin-top:12px;border:1px solid #f0e2cf;border-radius:10px;background:#fffaf2;padding:10px 12px}
+  .sl-tag{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--exec);margin-bottom:8px}
+  .sl-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:#525761}
+  .sl-flow .a{color:#c2700a;font-weight:600}
+  .sl-pkt{margin-top:9px;background:#fff5e8;border-radius:8px;padding:7px 11px;font-family:var(--mono);font-size:10.5px;color:#6a5636;line-height:1.8;white-space:pre}
+  .sl-pkt b{color:#7a5a1e;font-weight:600}
+
+  /* ---- branch ---- */
+  .branch{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+  .term{border-radius:10px;padding:10px 12px;border:1px solid var(--hair)}
+  .term .tl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;margin-bottom:6px}
+  .term--ok{background:#f3faf6;border-color:#cfe8d8}.term--ok .tl{color:#1a7a47}
+  .term--fail{background:#fbf6f3;border-color:#ecd6ce}.term--fail .tl{color:#b4541f}
+  .term .row{display:flex;flex-wrap:wrap;gap:5px}
+  .term .note{font-family:var(--mono);font-size:11px;color:#a98a72}
+
+  /* ---- re-plan loop rail ---- */
+  .loop{position:relative;padding-left:24px;margin-top:7px}
+  .loop::before{content:"";position:absolute;left:5px;top:9px;bottom:0;width:11px;
+    border-left:2px solid rgba(194,112,10,.45);border-top:2px solid rgba(194,112,10,.45);
+    border-top-left-radius:11px}
+  .loop .up{position:absolute;left:11px;top:5px;width:8px;height:8px;
+    border-left:2px solid var(--exec);border-top:2px solid var(--exec);transform:rotate(45deg)}
+  .loop-badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;
+    letter-spacing:.05em;color:var(--exec);background:#fff;border:1px solid #ecd6ce;
+    border-radius:20px;padding:3px 10px;margin-bottom:4px}
+
+  .entr{opacity:0;animation:rise .5s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i,0)*.05s + .05s)}
+  @keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  footer{margin-top:36px;font-family:var(--mono);font-size:11px;color:#9aa0ab;text-align:center}
+
+  @media (max-width:540px){.branch{grid-template-columns:1fr}.packet{width:100%}}
+  @media (prefers-reduced-motion:reduce){.entr{animation:none;opacity:1}.tchip{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">llm-pick-and-place · pipeline</div>
+    <h1>명령 한 줄이<br>관절 명령이 되기까지</h1>
+    <p class="thesis">흰 카드는 <b>처리(노드)</b>, 그 사이 회색 패킷은 <b>이동하는 값</b>입니다.
+      모든 모듈은 서로의 내부를 모르고 오직 <b>5개의 타입 계약</b>으로만 대화하며,
+      각 노드는 받은 값을 다음 노드가 먹을 타입으로 변환할 뿐이에요.</p>
+  </header>
+
+  <section class="legend entr">
+    <h2>노드 역할</h2>
+    <div class="roles">
+      <span class="role"><span class="dot" style="background:var(--io)"></span>입출력 · 환경</span>
+      <span class="role"><span class="dot" style="background:var(--perc)"></span>인식 Perception</span>
+      <span class="role"><span class="dot" style="background:var(--plan)"></span>계획 Planner</span>
+      <span class="role"><span class="dot" style="background:var(--exec)"></span>실행 Executor</span>
+    </div>
+    <h2>데이터 계약 (클릭 시 흐름 추적)</h2>
+    <div class="contracts">
+      <button class="tchip" data-type="instruction">instruction</button>
+      <button class="tchip" data-type="RawObs">RawObs</button>
+      <button class="tchip" data-type="WorldState">WorldState</button>
+      <button class="tchip" data-type="Plan">Plan</button>
+      <button class="tchip" data-type="SkillCall">SkillCall</button>
+      <button class="tchip" data-type="Action">Action</button>
+      <button class="tchip" data-type="ActionResult">ActionResult</button>
+      <button class="tchip" data-type="RunResult">RunResult</button>
+    </div>
+    <p class="hint">↳ 타입을 누르면 어디서 생성돼 어디로 들어가는지 전체가 표시됩니다.</p>
+  </section>
+
+  <!-- INPUT -->
+  <div class="node node--io entr" style="--i:0">
+    <div class="ntag">입력</div>
+    <div class="fn">사용자 명령</div>
+    <p class="desc">자연어 명령 한 줄 (한국어/영어).</p>
+  </div>
+
+  <div class="flow entr" style="--i:1"><span class="chev"></span>
+    <div class="packet">
+      <div class="ph"><button class="tchip" data-type="instruction">instruction : str</button><span class="plabel">전달</span></div>
+      <div class="pe"><b>예:</b> "파란 박스를 빨간 박스 위에 올려놔"</div>
+    </div>
+  </div>
+
+  <!-- ENV RESET -->
+  <div class="node node--io entr" style="--i:2">
+    <div class="ntag">환경 · 초기화</div>
+    <div class="fn">env.reset()</div>
+    <p class="desc">씬을 리셋하고 시뮬레이터의 날것 관측을 돌려줍니다.</p>
+  </div>
+
+  <span class="loop-badge entr" style="--i:3">↺ 실패 시 perceive·plan으로 복귀</span>
+  <div class="loop">
+    <span class="up" aria-hidden="true"></span>
+
+    <div class="flow entr" style="--i:3"><span class="chev"></span>
+      <div class="packet">
+        <div class="ph"><button class="tchip" data-type="RawObs">RawObs</button><span class="plabel">전달 · 날것 관측</span></div>
+        <div class="pf">├ <b>gt_objects</b> : [{ label, pose }]
+└ <b>robot</b> : 관절·EE 상태 (raw)</div>
+      </div>
+    </div>
+
+    <!-- PERCEPTION -->
+    <div class="node node--perc entr" style="--i:4">
+      <div class="ntag">인식 · Perception</div>
+      <div class="fn">OraclePerception.perceive(obs)</div>
+      <p class="desc">GT 포즈를 신뢰해 의미 있는 씬 스냅샷으로 변환 (confidence 1.0, 카메라 인식 없음).</p>
+    </div>
+
+    <div class="flow entr" style="--i:5"><span class="chev"></span>
+      <div class="packet">
+        <div class="ph"><button class="tchip" data-type="WorldState">WorldState</button><span class="plabel">전달</span></div>
+        <div class="pf">├ <b>t</b> : int
+├ <b>objects</b> : list[ObjectState]
+│      └ { id, label, <b>pose</b>{ position[3], quaternion[4] }, confidence, bbox }
+└ <b>robot</b> : { joint_positions[n], ee_pose, gripper:float, holding }</div>
+        <div class="pe"><b>예:</b> objects=[red_cube, blue_cube] · robot.holding=None</div>
+      </div>
+    </div>
+
+    <!-- PLANNER -->
+    <div class="node node--plan entr" style="--i:6">
+      <div class="ntag">계획 · LLM 에이전트</div>
+      <div class="fn">LlmPlanner.plan(world, instruction)</div>
+      <p class="desc">도구 호출 루프로 명령을 기술 호출 시퀀스로 변환. 실패 시 위치-프롬프트 JSON → rule_based 폴백.</p>
+    </div>
+
+    <div class="flow entr" style="--i:7"><span class="chev"></span>
+      <div class="packet">
+        <div class="ph"><button class="tchip" data-type="Plan">Plan</button><span class="plabel">전달</span></div>
+        <div class="pf">└ <b>steps</b> : list[<button class="tchip" data-type="SkillCall" style="padding:1px 6px;font-size:11px">SkillCall</button>]
+       SkillCall{ <b>skill</b>:str, <b>args</b>:dict }</div>
+        <div class="pe"><b>예:</b> pick{ label:"blue_cube" }  →  place{ label:"blue_cube", target:"red_cube" }</div>
+      </div>
+    </div>
+
+    <!-- EXECUTOR -->
+    <div class="node node--exec entr" style="--i:8">
+      <div class="ntag">실행 · DiffIK</div>
+      <div class="fn">SkillExecutor.run(call, world)</div>
+      <p class="desc">SkillCall을 하나씩 상태머신으로 실행 (pick: APPROACH→DESCEND→CLOSE→LIFT). 진짜 일하는 안쪽 루프 ↓</p>
+      <div class="subloop">
+        <div class="sl-tag">매 틱 반복 · SUCCESS/FAILURE까지</div>
+        <div class="sl-flow">skill.act() <span class="a">→</span> <button class="tchip" data-type="Action" style="font-size:11px">Action</button> <span class="a">→</span> env.step(Action) <span class="a">→</span> perceive() <span class="a">↻</span></div>
+        <div class="sl-pkt"><b>Action</b> ├ joint_targets : ndarray[n]
+       ├ gripper : float
+       └ ee_target : Pose | None
+<b>예:</b> ee_target = blue_cube + tcp_offset_z(0.107) · gripper = close</div>
+      </div>
+    </div>
+
+    <div class="flow entr" style="--i:9"><span class="chev"></span>
+      <div class="packet">
+        <div class="ph"><button class="tchip" data-type="ActionResult">ActionResult</button><span class="plabel">전달</span></div>
+        <div class="pf">├ <b>status</b> : RUNNING | SUCCESS | FAILURE
+├ <b>message</b> : str
+└ <b>world_after</b> : <button class="tchip" data-type="WorldState" style="padding:1px 6px;font-size:11px">WorldState</button></div>
+        <div class="pe"><b>예:</b> status=SUCCESS · message="picked blue_cube"</div>
+      </div>
+    </div>
+
+    <!-- DECISION -->
+    <div class="node node--io entr" style="--i:10">
+      <div class="ntag">판정 · Orchestrator</div>
+      <div class="fn">성공 여부 + 재계획 예산 검사</div>
+      <p class="desc">모든 SkillCall 성공 → 종료. 하나라도 실패하고 예산이 남으면 갱신된 WorldState로 다시 perceive·plan.</p>
+      <div class="branch">
+        <div class="term term--ok"><div class="tl">✓ 전부 성공</div>
+          <div class="row"><button class="tchip" data-type="RunResult">RunResult(success=True)</button></div></div>
+        <div class="term term--fail"><div class="tl">✗ 실패 · 예산 남음</div>
+          <span class="note">↺ 위로 복귀</span></div>
+      </div>
+    </div>
+
+  </div><!-- /loop -->
+
+  <footer>5 contracts · instruction → WorldState → Plan → Action → ActionResult</footer>
+</div>
+
+<script>
+(function(){
+  var active=null;
+  var chips=[].slice.call(document.querySelectorAll('.tchip'));
+  function apply(){
+    chips.forEach(function(c){
+      var t=c.getAttribute('data-type');
+      c.classList.remove('hl','dim');
+      if(active){ c.classList.add(t===active?'hl':'dim'); }
+    });
+  }
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      var t=c.getAttribute('data-type');
+      active=(active===t)?null:t; apply();
+    });
+  });
+})();
+</script>
+</body>
+</html>

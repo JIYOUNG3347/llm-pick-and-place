@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PickSkill — 그래스프 알고리즘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --ink:#15171c; --muted:#717784;
+    --hair:#e5e8ec; --hair2:#d4d8df;
+    --motion:#0d9488; --grip:#c2700a; --ok:#1a7a47; --fail:#b4541f; --io:#5b6573;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.5;padding:46px 20px 84px}
+  .wrap{max-width:680px;margin:0 auto}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,5.5vw,36px);letter-spacing:-.02em;margin:8px 0 12px;line-height:1.07}
+  .thesis{font-size:14px;color:#3c424c;max-width:60ch}
+  .thesis b{font-weight:600;color:var(--ink)}
+  code{font-family:var(--mono);font-size:.92em;background:#eceef1;padding:1px 5px;border-radius:5px}
+
+  /* hero formula box */
+  .formula{margin:20px 0 6px;padding:14px 16px;background:#0f1115;border-radius:12px;color:#e8eaed;
+    font-family:var(--mono);font-size:12.5px;line-height:1.9}
+  .formula .fk{color:#7fd6cc}.formula .cm{color:#8b919c}.formula b{color:#fff;font-weight:600}
+
+  /* legend constants */
+  .legend{margin:14px 0 24px;padding:14px 16px;background:var(--surface);border:1px solid var(--hair);border-radius:12px}
+  .legend h2{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:11px}
+  .consts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px 14px}
+  .const{font-family:var(--mono);font-size:11.5px;color:#4a4f59}
+  .const b{color:#15171c}
+  .roles{display:flex;flex-wrap:wrap;gap:13px 18px;margin-top:13px;padding-top:12px;border-top:1px solid var(--hair)}
+  .role{display:flex;align-items:center;gap:7px;font-size:12px;color:#3c424c}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+
+  /* states */
+  .state{position:relative;background:var(--surface);border:1px solid var(--hair);border-left:3px solid var(--io);
+    border-radius:12px;padding:13px 16px;box-shadow:0 1px 2px rgba(21,23,28,.05);transition:box-shadow .15s,transform .15s}
+  .state:hover{box-shadow:0 4px 16px rgba(21,23,28,.09);transform:translateY(-1px)}
+  .state.motion{border-left-color:var(--motion)}.state.grip{border-left-color:var(--grip)}
+  .shead{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .sname{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.02em}
+  .state.motion .sname{color:var(--motion)}.state.grip .sname{color:var(--grip)}
+  .sdo{font-size:12px;color:#525761;margin-bottom:9px}
+  .sio{font-family:var(--mono);font-size:11px;line-height:1.85;background:#fafbfc;border:1px solid var(--hair);border-radius:8px;padding:7px 10px;overflow-x:auto}
+  .sio .lbl{display:inline-block;width:30px;color:#9aa0ab;font-weight:600}
+  .sio .o{color:#0d6e66}.sio b{color:#2c313b;font-weight:600}
+
+  /* transition connector */
+  .trans{display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px}
+  .trans .ln{width:2px;height:9px;background:var(--hair2)}
+  .trans .cond{font-family:var(--mono);font-size:11px;color:#5a6069;background:#eef0f3;border:1px solid var(--hair2);
+    border-radius:7px;padding:3px 10px;text-align:center;max-width:100%}
+  .trans .cond b{color:#2c313b}
+  .trans .chev{width:7px;height:7px;border-right:2px solid var(--hair2);border-bottom:2px solid var(--hair2);transform:rotate(45deg)}
+
+  /* fail chip */
+  .failchip{display:inline-block;font-family:var(--mono);font-size:10.5px;color:var(--fail);
+    background:#fbf4f2;border:1px solid #ecd6ce;border-radius:6px;padding:2px 8px;margin-top:8px}
+
+  /* grasp detection callout */
+  .grasp{margin:8px 0 2px;border:1px solid #f0e2cf;background:#fffaf2;border-radius:12px;padding:13px 16px}
+  .grasp h3{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--grip);margin-bottom:10px}
+  .grasp ol{list-style:none;counter-reset:c}
+  .grasp li{counter-increment:c;font-family:var(--mono);font-size:11.5px;color:#4a4f59;padding:3px 0 3px 26px;position:relative;line-height:1.7}
+  .grasp li::before{content:counter(c);position:absolute;left:0;top:3px;width:17px;height:17px;border-radius:50%;
+    background:var(--grip);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+  .grasp li b{color:#2c313b}
+  .grasp .res{margin-top:9px;padding-top:9px;border-top:1px dashed #e6d4bd;font-family:var(--mono);font-size:11px;color:#7a5a1e}
+
+  /* terminal */
+  .term{text-align:center;font-family:var(--mono);font-size:13px;font-weight:600;border-radius:10px;padding:11px;margin-top:2px}
+  .term.ok{background:#f3faf6;border:1px solid #cfe8d8;color:var(--ok)}
+  .gtimeout{text-align:center;font-family:var(--mono);font-size:11px;color:var(--fail);margin-top:14px}
+
+  /* place section */
+  .place{margin-top:40px}
+  .place-h{font-family:var(--disp);font-size:19px;font-weight:600;letter-spacing:-.01em;margin-bottom:4px}
+  .place-sub{font-size:13px;color:#525761;margin-bottom:14px}
+  .pchain{display:flex;flex-direction:column;gap:7px}
+  .prow{display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:start;background:var(--surface);
+    border:1px solid var(--hair);border-left:3px solid var(--grip);border-radius:10px;padding:9px 13px}
+  .prow.mv{border-left-color:var(--motion)}
+  .pname{font-family:var(--mono);font-size:11.5px;font-weight:600}
+  .prow.mv .pname{color:var(--motion)}.prow:not(.mv) .pname{color:var(--grip)}
+  .pdetail{font-family:var(--mono);font-size:10.5px;color:#525761;line-height:1.65}
+  .pdetail .c{color:#9aa0ab}.pdetail b{color:#2c313b}
+
+  .entr{opacity:0;animation:rise .5s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i,0)*.045s + .05s)}
+  @keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  footer{margin-top:36px;font-family:var(--mono);font-size:11px;color:#9aa0ab;text-align:center}
+  @media (max-width:520px){.prow{grid-template-columns:1fr;gap:3px}.consts{grid-template-columns:1fr 1fr}}
+  @media (prefers-reduced-motion:reduce){.entr{animation:none;opacity:1}.state{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">llm-pick-and-place · PickSkill</div>
+    <h1>박스를 집는<br>상태머신</h1>
+    <p class="thesis">실행 루프는 매 틱 <code>status → act → env.step → perceive</code>를 돈다.
+      그래서 모든 상태의 <b>IN은 WorldState</b>(큐브 GT pose + 로봇 상태), <b>OUT은 Action</b>
+      (<code>ee_target</code> + <code>gripper</code>)이다. 툴이 아래를 향하므로
+      <code>TCP_z = wrist_z − tcp_offset</code>, 손끝이 큐브 중심에 닿게 목표를 잡는다.</p>
+  </header>
+
+  <div class="formula entr" style="--i:0">
+    <span class="fk">grasp_wrist_z</span> = <b>cube_z</b> + tcp_offset_z(0.107)&nbsp;&nbsp;<span class="cm">→ TCP_z = cube_z (큐브 중심)</span><br>
+    <span class="fk">TCP_z</span> = wrist_z − tcp_offset_z&nbsp;&nbsp;<span class="cm">→ 손끝 중점</span>
+  </div>
+
+  <section class="legend entr" style="--i:1">
+    <h2>상수 (현재값)</h2>
+    <div class="consts">
+      <span class="const">tcp_offset_z <b>0.107</b></span>
+      <span class="const">obj_half_h <b>0.021</b></span>
+      <span class="const">DESCEND_RATE <b>0.003</b>/step</span>
+      <span class="const">DESCEND_TOL <b>0.005</b></span>
+      <span class="const">DESCEND_MAX <b>400</b></span>
+      <span class="const">TOL_COARSE <b>0.05</b></span>
+      <span class="const">min_grasp_finger <b>0.010</b></span>
+      <span class="const">grasp_dist_thresh <b>0.045</b></span>
+      <span class="const">PICK_TIMEOUT <b>1600</b></span>
+      <span class="const">gripper OPEN/CLOSE <b>0.0/1.0</b></span>
+    </div>
+    <div class="roles">
+      <span class="role"><span class="dot" style="background:var(--motion)"></span>팔 이동</span>
+      <span class="role"><span class="dot" style="background:var(--grip)"></span>그리퍼 동작</span>
+      <span class="role"><span class="dot" style="background:var(--ok)"></span>성공</span>
+    </div>
+  </section>
+
+  <!-- APPROACH -->
+  <div class="state motion entr" style="--i:2">
+    <div class="shead"><span class="sname">APPROACH</span></div>
+    <div class="sdo">큐브 위 0.40m로 이동, 그리퍼는 열어둠</div>
+    <div class="sio"><span class="lbl">IN</span> cube(ox,oy,oz) · wrist
+<span class="o"><span class="lbl">OUT</span> ee_target=(ox, oy, <b>0.40</b>) · gripper=OPEN</span></div>
+  </div>
+  <div class="trans entr" style="--i:3"><span class="ln"></span>
+    <span class="cond">ee_dist([ox,oy,0.40]) &lt; <b>0.05</b>&nbsp;&nbsp;→&nbsp;&nbsp;grasp_wrist_z = oz + 0.107 확정</span><span class="chev"></span></div>
+
+  <!-- DESCEND -->
+  <div class="state motion entr" style="--i:4">
+    <div class="shead"><span class="sname">DESCEND</span></div>
+    <div class="sdo">cmd_z를 3mm/step씩 grasp_wrist_z까지 내림 → TCP를 큐브 중심으로</div>
+    <div class="sio"><span class="lbl">IN</span> cube(ox,oy,oz) · wrist_z
+<span class="o"><span class="lbl">OUT</span> cmd_z=max(grasp_wrist_z, cmd_z−0.003); ee_target=(ox,oy,<b>cmd_z</b>) · gripper=OPEN</span></div>
+  </div>
+  <div class="trans entr" style="--i:5"><span class="ln"></span>
+    <span class="cond">|wrist_z − grasp_wrist_z| &lt; <b>0.005</b>&nbsp;&nbsp;OR&nbsp;&nbsp;wait ≥ <b>400</b></span><span class="chev"></span></div>
+
+  <!-- CLOSE -->
+  <div class="state grip entr" style="--i:6">
+    <div class="shead"><span class="sname">CLOSE</span></div>
+    <div class="sdo">위치 고정한 채 그리퍼 닫고 50틱 대기 (관절 이동 시간 확보)</div>
+    <div class="sio"><span class="lbl">IN</span> cube(ox,oy,oz) · wait
+<span class="o"><span class="lbl">OUT</span> ee_target=(ox, oy, grasp_wrist_z) · gripper=<b>CLOSE</b></span></div>
+  </div>
+  <div class="trans entr" style="--i:7"><span class="ln"></span>
+    <span class="cond">wait ≥ <b>50</b></span><span class="chev"></span></div>
+
+  <!-- WAIT_GRASP -->
+  <div class="state grip entr" style="--i:8">
+    <div class="shead"><span class="sname">WAIT_GRASP</span></div>
+    <div class="sdo">IsaacEnv의 FixedJoint 파지 검출 결과를 폴링</div>
+    <div class="sio"><span class="lbl">IN</span> world.robot.holding
+<span class="o"><span class="lbl">OUT</span> = CLOSE와 동일 (gripper=CLOSE 유지)</span></div>
+    <span class="failchip">실패: wait ≥ 60 → FAILURE</span>
+  </div>
+
+  <div class="grasp entr" style="--i:9">
+    <h3>파지 검출 — FixedJoint 바인딩 (4개 AND)</h3>
+    <ol>
+      <li><b>gripper_cmd &gt; 0.5</b> &nbsp;(CLOSE=1.0)</li>
+      <li><b>holding is None</b> &nbsp;(아직 안 잡음)</li>
+      <li><b>closed_amount ≥ 0.010</b> &nbsp;<span style="color:#9aa0ab">panda: 0.04−finger_val ≥ 0.010 → finger_val ≤ 0.030</span></li>
+      <li><b>dist &lt; 0.045</b> &nbsp;<span style="color:#9aa0ab">‖TCP − 큐브‖ (3D, world)</span></li>
+    </ol>
+    <div class="res">성립 → holding=cube, USD FixedJoint 생성(kinematic) &nbsp;·&nbsp; 해제: gripper_cmd ≤ 0.5 → FixedJoint 제거</div>
+  </div>
+
+  <div class="trans entr" style="--i:10"><span class="ln"></span>
+    <span class="cond">holding ≠ None</span><span class="chev"></span></div>
+
+  <!-- LIFT -->
+  <div class="state motion entr" style="--i:11">
+    <div class="shead"><span class="sname">LIFT</span></div>
+    <div class="sdo">0.40m로 들어올림 (FixedJoint로 큐브가 동반)</div>
+    <div class="sio"><span class="lbl">IN</span> cube[:2] (들고 있으면 따라옴) · wrist
+<span class="o"><span class="lbl">OUT</span> ee_target=(ox2, oy2, <b>0.40</b>) · gripper=CLOSE</span></div>
+  </div>
+  <div class="trans entr" style="--i:12"><span class="ln"></span>
+    <span class="cond">ee_dist([ox2,oy2,0.40]) &lt; <b>0.05</b></span><span class="chev"></span></div>
+
+  <div class="term ok entr" style="--i:13">✓ SUCCESS</div>
+  <div class="gtimeout entr" style="--i:13">전역 가드 — 모든 상태에서 steps ≥ 1600 (PICK_TIMEOUT) → FAILURE</div>
+
+  <!-- PLACE -->
+  <div class="place">
+    <div class="place-h entr" style="--i:14">PlaceSkill (요약)</div>
+    <div class="place-sub entr" style="--i:14"><code>place_z = tz + 2·obj_half_h + 0.015 + tcp_offset_z</code> — 들고 있는 큐브 바닥이 타깃 상단 +15mm</div>
+    <div class="pchain">
+      <div class="prow mv entr" style="--i:15"><span class="pname">HOVER</span><span class="pdetail">OUT (tx,ty,<b>0.40</b>) · CLOSE <span class="c">→</span> ee_dist &lt; 0.05</span></div>
+      <div class="prow mv entr" style="--i:16"><span class="pname">DESCEND</span><span class="pdetail">OUT (tx,ty,<b>place_z</b>) · CLOSE <span class="c">→</span> ee_dist &lt; 0.010 (FINE)</span></div>
+      <div class="prow entr" style="--i:17"><span class="pname">OPEN</span><span class="pdetail">OUT (tx,ty,place_z) · <b>OPEN</b> <span class="c">→</span> wait ≥ 20</span></div>
+      <div class="prow entr" style="--i:18"><span class="pname">WAIT_RELEASE</span><span class="pdetail">OPEN 유지 <span class="c">→</span> holding=None OR wait ≥ 30 &nbsp;<span class="c">(FixedJoint 제거 감지)</span></span></div>
+      <div class="prow mv entr" style="--i:19"><span class="pname">RETREAT</span><span class="pdetail">OUT (tx,ty,<b>0.40</b>) · OPEN <span class="c">→</span> ee_dist &lt; 0.05 → SUCCESS</span></div>
+    </div>
+  </div>
+
+  <footer>APPROACH → DESCEND → CLOSE → WAIT_GRASP → LIFT · grasp = 4-AND FixedJoint</footer>
+</div>
+</body>
+</html>
